@@ -5,19 +5,19 @@
  * @uses  ModuleFrontControllerCore
  */
 class PaymentNetworkHostedModuleFrontController extends ModuleFrontController {
-	/**
-	 * @see FrontController::initContent()
-	 */
-	public function initContent() {
-		parent::initContent();
+    /**
+     * @see FrontController::initContent()
+     */
+    public function initContent() {
+        parent::initContent();
 
         $redirectUrl = $this->context->link->getModuleLink($this->module->name, 'validation', array(), true);
-        if ('Y' === Configuration::get('PAYMENT_NETWORK_DEBUG')) {
-            $redirectUrl.= '?XDEBUG_SESSION_START=asdf';
+        if (Configuration::get('PAYMENT_NETWORK_DEBUG') === 'Y') {
+            $redirectUrl .= '&XDEBUG_SESSION_START=paymentmodule';
         }
 
-		$parameters = array_merge(
-		    $this->module->captureOrder($this->context),
+        $parameters = array_merge(
+            $this->module->captureOrder($this->context),
             [
                 'redirectURL' => $redirectUrl
             ]
@@ -30,12 +30,17 @@ class PaymentNetworkHostedModuleFrontController extends ModuleFrontController {
                 Configuration::get('PAYMENT_NETWORK_MERCHANT_PASSPHRASE')
             );
 
-            // Prevent insecure requests
+            // Replace http with https in Gateway URL
             $gatewayURL = str_ireplace('http://', 'https://', Configuration::get('PAYMENT_NETWORK_GATEWAY_URL'));
 
             // Always append end slash
             if (preg_match('/(\.php|\/)$/', $gatewayURL) == false) {
-                $gatewayURL .= '/hosted/';
+                $gatewayURL .= '/';
+            }
+
+            // If URL is missing /paymentform add it. Otherwise assume this is a CHF URL.
+            if (preg_match('/paymentform(\/.*)?/', $gatewayURL) == false) {
+                $gatewayURL .= 'paymentform/';
             }
 
             $this->context->smarty->assign(array(
@@ -55,5 +60,5 @@ class PaymentNetworkHostedModuleFrontController extends ModuleFrontController {
             echo $hostedRequest;
             die();
         }
-	}
+    }
 }
